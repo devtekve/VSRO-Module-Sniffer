@@ -13,9 +13,7 @@ namespace SimpleTCPForwarder
     class TcpForwarderSlim
     {
 
-        public static Security m_SilkroadSecurity = new Security();
-        public static byte[] m_SilkroadSecurityBuffer = new byte[16334];
-
+        static Security m_SilkroadSecurity = new Security();
 
         private readonly Socket _mainSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
@@ -49,15 +47,30 @@ namespace SimpleTCPForwarder
                 var bytesRead = state.SourceSocket.EndReceive(result);
                 if (bytesRead > 0)
                 {
-                    Packet _pck = new Packet(0x0000, false, false, state.Buffer,0,bytesRead);
-                    byte[] bytes = _pck.GetBytes();
+                    byte[] m_Buffer = state.Buffer;
+                    m_SilkroadSecurity.Recv(m_Buffer, 0, m_Buffer.Length);
+                    List<Packet> RemotePackets = m_SilkroadSecurity.TransferIncoming();
 
-                    //Console.WriteLine("[S->C][{0:X4}][{1} bytes]{2}{3}{4}{5}{6}", (object)_pck.Opcode, (object)bytes.Length, _pck.Encrypted ? (object)"[Encrypted]" : (object)"", _pck.Massive ? (object)"[Massive]" : (object)"", (object)Environment.NewLine, (object)Utility.HexDump(bytes), (object)Environment.NewLine);
-                    Program.echo(string.Format("[UNKNOWN DIRECTION YET][{0:X4}][{1} bytes]{2}{3}{4}{5}{6}", (object)_pck.Opcode, (object)bytes.Length, _pck.Encrypted ? (object)"[Encrypted]" : (object)"", _pck.Massive ? (object)"[Massive]" : (object)"", (object)Environment.NewLine, (object)Utility.HexDump(bytes), (object)Environment.NewLine), "*");
-                    ModuleInjector.IO.Logger.LogIt(string.Format("[SUNKNOWN DIRECTION YET][{0:X4}][{1} bytes]{2}{3}{4}{5}{6}", (object)_pck.Opcode, (object)bytes.Length, _pck.Encrypted ? (object)"[Encrypted]" : (object)"", _pck.Massive ? (object)"[Massive]" : (object)"", (object)Environment.NewLine, (object)Utility.HexDump(bytes), (object)Environment.NewLine), "GATEWAY");
+                    if (RemotePackets != null)
+                    {
+                        foreach (Packet _pck in RemotePackets)
+                        {
+                            if (_pck.Opcode == 0x5000 || _pck.Opcode == 0x9000 || _pck.Opcode == 0x0000) // ignore always
+                            {
+                            }
+                            else
+                            {
+                                byte[] bytes = _pck.GetBytes();
+
+                                //Console.WriteLine("[S->C][{0:X4}][{1} bytes]{2}{3}{4}{5}{6}", (object)_pck.Opcode, (object)bytes.Length, _pck.Encrypted ? (object)"[Encrypted]" : (object)"", _pck.Massive ? (object)"[Massive]" : (object)"", (object)Environment.NewLine, (object)Utility.HexDump(bytes), (object)Environment.NewLine);
+                                Program.echo(string.Format("[UNKNOWN DIRECTION YET][{0:X4}][{1} bytes]{2}{3}{4}{5}{6}", (object)_pck.Opcode, (object)bytes.Length, _pck.Encrypted ? (object)"[Encrypted]" : (object)"", _pck.Massive ? (object)"[Massive]" : (object)"", (object)Environment.NewLine, (object)Utility.HexDump(bytes), (object)Environment.NewLine), "*");
+                                ModuleInjector.IO.Logger.LogIt(string.Format("[SUNKNOWN DIRECTION YET][{0:X4}][{1} bytes]{2}{3}{4}{5}{6}", (object)_pck.Opcode, (object)bytes.Length, _pck.Encrypted ? (object)"[Encrypted]" : (object)"", _pck.Massive ? (object)"[Massive]" : (object)"", (object)Environment.NewLine, (object)Utility.HexDump(bytes), (object)Environment.NewLine), "GATEWAY");
+                            }
+                        }
+                    }
                     Console.WriteLine("bytesRead: " + bytesRead);
                     state.DestinationSocket.Send(state.Buffer, bytesRead, SocketFlags.None);
-                    state.SourceSocket.BeginReceive(state.Buffer, 0, state.Buffer.Length, 0, OnDataReceive, state);    
+                     state.SourceSocket.BeginReceive(state.Buffer, 0, state.Buffer.Length, 0, OnDataReceive, state);    
                 }
             }
             catch (Exception e)

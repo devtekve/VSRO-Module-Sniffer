@@ -446,7 +446,7 @@ namespace Framework
         {
             if (packet_encrypted)
             {
-                throw (new Exception("[SecurityAPI::Handshake] Received an illogical (encrypted) handshake packet."));
+                //throw (new Exception("[SecurityAPI::Handshake] Received an illogical (encrypted) handshake packet."));
             }
             if (m_client_security)
             {
@@ -458,7 +458,7 @@ namespace Framework
                     {
                         if (m_accepted_handshake)
                         {
-                            throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (duplicate 0x9000)."));
+                           // throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (duplicate 0x9000)."));
                         }
                         m_accepted_handshake = true; // Otherwise, all good here
                         return;
@@ -466,12 +466,12 @@ namespace Framework
                     // Client should not send any 0x5000s!
                     else if (packet_opcode == 0x5000)
                     {
-                        throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (0x5000 with no handshake)."));
+                        //throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (0x5000 with no handshake)."));
                     }
                     // Programmer made a mistake in calling this function
                     else
                     {
-                        throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (programmer error)."));
+                       // throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (programmer error)."));
                     }
                 }
                 else
@@ -482,11 +482,11 @@ namespace Framework
                         // Can't accept it before it's started!
                         if (!m_started_handshake)
                         {
-                            throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (out of order 0x9000)."));
+                          //  throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (out of order 0x9000)."));
                         }
                         if (m_accepted_handshake) // Client error
                         {
-                            throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (duplicate 0x9000)."));
+                            //throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (duplicate 0x9000)."));
                         }
                         // Otherwise, all good here
                         m_accepted_handshake = true;
@@ -497,14 +497,14 @@ namespace Framework
                     {
                         if (m_started_handshake) // Client error
                         {
-                            throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (duplicate 0x5000)."));
+                            //throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (duplicate 0x5000)."));
                         }
                         m_started_handshake = true;
                     }
                     // Programmer made a mistake in calling this function
                     else
                     {
-                        throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (programmer error)."));
+                       // throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (programmer error)."));
                     }
                 }
 
@@ -555,7 +555,7 @@ namespace Framework
             {
                 if (packet_opcode != 0x5000)
                 {
-                    throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (programmer error)."));
+                    //throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (programmer error)."));
                 }
 
                 byte flag = packet_data.ReadByte();
@@ -627,7 +627,7 @@ namespace Framework
                     // Check to see if we already started a handshake
                     if (m_started_handshake || m_accepted_handshake)
                     {
-                        throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (duplicate 0x5000)."));
+                        //throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (duplicate 0x5000)."));
                     }
 
                     // Handshake challenge
@@ -644,7 +644,7 @@ namespace Framework
                     // Check to see if we already accepted a handshake
                     if (m_accepted_handshake)
                     {
-                        throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (duplicate 0x5000)."));
+                        //throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (duplicate 0x5000)."));
                     }
 
                     // Handshake accepted

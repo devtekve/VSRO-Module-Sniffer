@@ -54,6 +54,7 @@
     <Compile Include="SecurityApi\PacketWriter.cs" />
     <Compile Include="SecurityApi\Security.cs" />
     <Compile Include="SecurityApi\TransferBuffer.cs" />
+    <Compile Include="SecurityApi\tst.cs" />
     <Compile Include="SecurityApi\Utility.cs" />
     <Compile Include="TcpForwarderSlim.cs" />
   </ItemGroup>
