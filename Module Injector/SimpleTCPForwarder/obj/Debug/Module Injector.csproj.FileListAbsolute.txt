@@ -1,0 +1,6 @@
+F:\ORGANIZACION\Programacion\C#\VSRO-Module-Sniffer\Module Injector\SimpleTCPForwarder\bin\Debug\SimpleTCPForwarder.exe.config
+F:\ORGANIZACION\Programacion\C#\VSRO-Module-Sniffer\Module Injector\SimpleTCPForwarder\obj\Debug\SimpleTCPForwarder.exe
+F:\ORGANIZACION\Programacion\C#\VSRO-Module-Sniffer\Module Injector\SimpleTCPForwarder\obj\Debug\SimpleTCPForwarder.pdb
+F:\ORGANIZACION\Programacion\C#\VSRO-Module-Sniffer\Module Injector\SimpleTCPForwarder\bin\Debug\SimpleTCPForwarder.exe
+F:\ORGANIZACION\Programacion\C#\VSRO-Module-Sniffer\Module Injector\SimpleTCPForwarder\bin\Debug\SimpleTCPForwarder.pdb
+F:\ORGANIZACION\Programacion\C#\VSRO-Module-Sniffer\Module Injector\SimpleTCPForwarder\obj\Debug\Module Injector.csprojResolveAssemblyReference.cache

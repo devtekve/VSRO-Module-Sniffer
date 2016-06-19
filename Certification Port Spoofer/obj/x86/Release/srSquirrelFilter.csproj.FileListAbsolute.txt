@@ -1,0 +1,6 @@
+D:\Work\sro\srSquirrelFilter\srSquirrelFilter\bin\Release\srSquirrelFilter.exe
+D:\Work\sro\srSquirrelFilter\srSquirrelFilter\bin\Release\srSquirrelFilter.pdb
+D:\Work\sro\srSquirrelFilter\srSquirrelFilter\obj\x86\Release\srSquirrelFilter.exe
+D:\Work\sro\srSquirrelFilter\srSquirrelFilter\obj\x86\Release\srSquirrelFilter.pdb
+D:\Work\sro\srSquirrelFilter\srSquirrelFilter\bin\Release\SilkroadSecurityApi.dll
+D:\Work\sro\srSquirrelFilter\srSquirrelFilter\obj\x86\Release\srSquirrelFilter.csprojResolveAssemblyReference.cache

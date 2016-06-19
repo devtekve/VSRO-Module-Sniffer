@@ -1,0 +1,15 @@
+c:\users\nestor\documents\visual studio 2013\Projects\SimpleTCPForwarder\SimpleTCPForwarder\bin\Debug\SimpleTCPForwarder.exe.config
+c:\users\nestor\documents\visual studio 2013\Projects\SimpleTCPForwarder\SimpleTCPForwarder\bin\Debug\SimpleTCPForwarder.exe
+c:\users\nestor\documents\visual studio 2013\Projects\SimpleTCPForwarder\SimpleTCPForwarder\bin\Debug\SimpleTCPForwarder.pdb
+c:\users\nestor\documents\visual studio 2013\Projects\SimpleTCPForwarder\SimpleTCPForwarder\obj\Debug\SimpleTCPForwarder.csprojResolveAssemblyReference.cache
+c:\users\nestor\documents\visual studio 2013\Projects\SimpleTCPForwarder\SimpleTCPForwarder\obj\Debug\SimpleTCPForwarder.exe
+c:\users\nestor\documents\visual studio 2013\Projects\SimpleTCPForwarder\SimpleTCPForwarder\obj\Debug\SimpleTCPForwarder.pdb
+F:\ORGANIZACION\Programacion\C#\SimpleTCPForwarder\SimpleTCPForwarder\bin\Debug\SimpleTCPForwarder.exe.config
+F:\ORGANIZACION\Programacion\C#\SimpleTCPForwarder\SimpleTCPForwarder\obj\Debug\SimpleTCPForwarder.exe
+F:\ORGANIZACION\Programacion\C#\SimpleTCPForwarder\SimpleTCPForwarder\obj\Debug\SimpleTCPForwarder.pdb
+F:\ORGANIZACION\Programacion\C#\SimpleTCPForwarder\SimpleTCPForwarder\bin\Debug\SimpleTCPForwarder.exe
+F:\ORGANIZACION\Programacion\C#\SimpleTCPForwarder\SimpleTCPForwarder\bin\Debug\SimpleTCPForwarder.pdb
+F:\ORGANIZACION\Programacion\C#\SimpleTCPForwarder\SimpleTCPForwarder\obj\Debug\SimpleTCPForwarder.csprojResolveAssemblyReference.cache
+F:\ORGANIZACION\Programacion\C#\VSRO-Module-Sniffer\Module Injector\SimpleTCPForwarder\bin\Debug\SimpleTCPForwarder.exe.config
+F:\ORGANIZACION\Programacion\C#\VSRO-Module-Sniffer\Module Injector\SimpleTCPForwarder\obj\Debug\SimpleTCPForwarder.exe
+F:\ORGANIZACION\Programacion\C#\VSRO-Module-Sniffer\Module Injector\SimpleTCPForwarder\obj\Debug\SimpleTCPForwarder.pdb

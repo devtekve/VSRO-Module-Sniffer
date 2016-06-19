@@ -1,0 +1,12 @@
+C:\Users\DevTekDESK\OneDrive\Programacion C#\vSRO - Module Injector\bin\Debug\ExploitFilter.exe
+C:\Users\DevTekDESK\OneDrive\Programacion C#\vSRO - Module Injector\bin\Debug\ExploitFilter.pdb
+C:\Users\DevTekDESK\OneDrive\Programacion C#\vSRO - Module Injector\obj\x86\Debug\ModuleInjector.csprojResolveAssemblyReference.cache
+C:\Users\DevTekDESK\OneDrive\Programacion C#\vSRO - Module Injector\obj\x86\Debug\ExploitFilter.exe
+C:\Users\DevTekDESK\OneDrive\Programacion C#\vSRO - Module Injector\obj\x86\Debug\ExploitFilter.pdb
+C:\Users\DevTekVE\OneDrive\Programacion C#\vSRO - Module Injector\obj\x86\Debug\ExploitFilter.exe
+C:\Users\DevTekVE\OneDrive\Programacion C#\vSRO - Module Injector\obj\x86\Debug\ExploitFilter.pdb
+C:\Users\DevTekVE\OneDrive\Programacion C#\vSRO - Module Injector\bin\Debug\ExploitFilter.exe
+C:\Users\DevTekVE\OneDrive\Programacion C#\vSRO - Module Injector\bin\Debug\ExploitFilter.pdb
+C:\Users\DevTekVE\OneDrive\Programacion C#\vSRO - Module Injector\obj\x86\Debug\ModuleInjector.csprojResolveAssemblyReference.cache
+F:\ORGANIZACION\Programacion\C#\VSRO-Module-Sniffer\Certification Port Spoofer\obj\x86\Debug\ExploitFilter.exe
+F:\ORGANIZACION\Programacion\C#\VSRO-Module-Sniffer\Certification Port Spoofer\obj\x86\Debug\ExploitFilter.pdb
