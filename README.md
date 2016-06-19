@@ -8,15 +8,15 @@ Installation it's easy, simply go ahead and change the settings at your will.
 
 ##INI Example
 
--[SETTINGS]
--IP=127.0.0.1					(Your server's IP address)
--GATEWAY=13580					(Real Farm manager Port) [Sorry for the name mismatch, it is late, it will be fixed soon]
--AGENT=45005						(You can safely ignore this)
--BINDIP=127.0.0.1				(Your server's IP address for binding [Pay attention to this setting])
--GWBIND=5001						(Fake Farm Manager port) [You MUST set this port in server.cfg section Gameserver]
--AGBIND=5002						(You can safely ignore this)
--REAL_MODULE_PORT = 15885		(This is the original Gameserver port you have in your packt.dat [Certification]) [This is the port in which Agent server will eventually connect, this will end up being the listening port for the sniffer]
--FAKE_NEW_MODULE_PORT = 14885	(This is the port in which Gameserver Will start listening, Sniffer will redirect connection to this port.)
+- [SETTINGS]
+- IP=127.0.0.1					(Your server's IP address)
+- GATEWAY=13580					(Real Farm manager Port) [Sorry for the name mismatch, it is late, it will be fixed soon]
+- AGENT=45005						(You can safely ignore this)
+- BINDIP=127.0.0.1				(Your server's IP address for binding [Pay attention to this setting])
+- GWBIND=5001						(Fake Farm Manager port) [You MUST set this port in server.cfg section Gameserver]
+- AGBIND=5002						(You can safely ignore this)
+- REAL_MODULE_PORT = 15885		(This is the original Gameserver port you have in your packt.dat [Certification]) [This is the port in which Agent server will eventually connect, this will end up being the listening port for the sniffer]
+- FAKE_NEW_MODULE_PORT = 14885	(This is the port in which Gameserver Will start listening, Sniffer will redirect connection to this port.)
 
 ## Usage
 
