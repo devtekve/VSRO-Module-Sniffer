@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace ModuleInjector.SecurityApi
+namespace ExploitFilter.SecurityApi
 {
     public class Utility
     {

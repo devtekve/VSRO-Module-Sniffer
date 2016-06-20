@@ -48,13 +48,11 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SecurityApi\Blowfish.cs" />
-    <Compile Include="SecurityApi\Extensions.cs" />
     <Compile Include="SecurityApi\Packet.cs" />
     <Compile Include="SecurityApi\PacketReader.cs" />
     <Compile Include="SecurityApi\PacketWriter.cs" />
     <Compile Include="SecurityApi\Security.cs" />
     <Compile Include="SecurityApi\TransferBuffer.cs" />
-    <Compile Include="SecurityApi\tst.cs" />
     <Compile Include="SecurityApi\Utility.cs" />
     <Compile Include="TcpForwarderSlim.cs" />
   </ItemGroup>

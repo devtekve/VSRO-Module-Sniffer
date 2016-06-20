@@ -1,5 +1,5 @@
-﻿using Framework;
-using ModuleInjector.SecurityApi;
+﻿using ExploitFilter.SecurityApi;
+using Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -44,12 +44,14 @@ namespace SimpleTCPForwarder
             var state = (State)result.AsyncState;
             try
             {
-                var bytesRead = state.SourceSocket.EndReceive(result);
+                int bytesRead = state.SourceSocket.EndReceive(result);
                 if (bytesRead > 0)
                 {
                     byte[] m_Buffer = state.Buffer;
-                    m_SilkroadSecurity.Recv(m_Buffer, 0, m_Buffer.Length);
+
+                    m_SilkroadSecurity.Recv(m_Buffer, 0, bytesRead);
                     List<Packet> RemotePackets = m_SilkroadSecurity.TransferIncoming();
+
 
                     if (RemotePackets != null)
                     {
@@ -68,7 +70,7 @@ namespace SimpleTCPForwarder
                             }
                         }
                     }
-                    Console.WriteLine("bytesRead: " + bytesRead);
+                    
                     state.DestinationSocket.Send(state.Buffer, bytesRead, SocketFlags.None);
                      state.SourceSocket.BeginReceive(state.Buffer, 0, state.Buffer.Length, 0, OnDataReceive, state);    
                 }

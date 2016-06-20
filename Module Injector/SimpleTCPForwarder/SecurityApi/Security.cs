@@ -282,7 +282,7 @@ namespace Framework
         bool m_accepted_handshake;
         bool m_started_handshake;
         byte m_identity_flag;
-        String m_identity_name;
+        static String m_identity_name;
 
         List<Packet> m_incoming_packets;
         List<Packet> m_outgoing_packets;
@@ -446,7 +446,7 @@ namespace Framework
         {
             if (packet_encrypted)
             {
-                //throw (new Exception("[SecurityAPI::Handshake] Received an illogical (encrypted) handshake packet."));
+                throw (new Exception("[SecurityAPI::Handshake] Received an illogical (encrypted) handshake packet."));
             }
             if (m_client_security)
             {
@@ -466,7 +466,7 @@ namespace Framework
                     // Client should not send any 0x5000s!
                     else if (packet_opcode == 0x5000)
                     {
-                        //throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (0x5000 with no handshake)."));
+                        throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (0x5000 with no handshake)."));
                     }
                     // Programmer made a mistake in calling this function
                     else
@@ -486,7 +486,7 @@ namespace Framework
                         }
                         if (m_accepted_handshake) // Client error
                         {
-                            //throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (duplicate 0x9000)."));
+                            throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (duplicate 0x9000)."));
                         }
                         // Otherwise, all good here
                         m_accepted_handshake = true;
@@ -497,7 +497,7 @@ namespace Framework
                     {
                         if (m_started_handshake) // Client error
                         {
-                            //throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (duplicate 0x5000)."));
+                            throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (duplicate 0x5000)."));
                         }
                         m_started_handshake = true;
                     }
@@ -555,7 +555,7 @@ namespace Framework
             {
                 if (packet_opcode != 0x5000)
                 {
-                    //throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (programmer error)."));
+                    throw (new Exception(String.Format("[SecurityAPI::Handshake] Received an illogical handshake packet (packet_opcode != 0x5000). OPCODE: [{0:X4}]", packet_opcode)));
                 }
 
                 byte flag = packet_data.ReadByte();
@@ -627,7 +627,7 @@ namespace Framework
                     // Check to see if we already started a handshake
                     if (m_started_handshake || m_accepted_handshake)
                     {
-                        //throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (duplicate 0x5000)."));
+                        throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (duplicate 0x5000)."));
                     }
 
                     // Handshake challenge
@@ -644,7 +644,7 @@ namespace Framework
                     // Check to see if we already accepted a handshake
                     if (m_accepted_handshake)
                     {
-                        //throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (duplicate 0x5000)."));
+                        throw (new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (duplicate 0x5000)."));
                     }
 
                     // Handshake accepted
@@ -1122,7 +1122,7 @@ namespace Framework
                                 byte expected_count = GenerateCountByte(true);
                                 if (packet_security_count != expected_count)
                                 {
-                                    //throw (new Exception("[SecurityAPI::Recv] Count byte mismatch."));
+                                    throw (new Exception("[SecurityAPI::Recv] Count byte mismatch."));
                                 }
 
                                 if (packet_encrypted || (m_security_flags.security_bytes == 1 && m_security_flags.blowfish == 0))
@@ -1139,7 +1139,7 @@ namespace Framework
                                 byte expected_crc = GenerateCheckByte(buffer.Buffer);
                                 if (packet_security_crc != expected_crc)
                                 {
-                                    //throw (new Exception("[SecurityAPI::Recv] CRC byte mismatch."));
+                                    throw (new Exception("[SecurityAPI::Recv] CRC byte mismatch."));
                                 }
 
                                 buffer.Buffer[4] = 0;
@@ -1249,4 +1249,967 @@ namespace Framework
             return packets;
         }
     }
+
+    /*public class Security_module
+    {
+        private static uint[] global_security_table = GenerateSecurityTable();
+        private bool m_accepted_handshake = false;
+        private Blowfish m_blowfish;
+        private ulong m_challenge_key = 0L;
+        private object m_class_lock;
+        private ulong m_client_key = 0L;
+        private bool m_client_security = false;
+        private byte[] m_count_byte_seeds = new byte[] { 0, 0, 0 };
+        private uint m_crc_seed = 0;
+        private TransferBuffer m_current_buffer;
+        private List<ushort> m_enc_opcodes = new List<ushort>();
+        private ulong m_handshake_blowfish_key = 0L;
+        private byte m_identity_flag = 0;
+        private string m_identity_name = "SR_Client";
+        private List<Packet> m_incoming_packets = new List<Packet>();
+        private ulong m_initial_blowfish_key = 0L;
+        private ushort m_massive_count;
+        private Packet m_massive_packet;
+        private List<Packet> m_outgoing_packets = new List<Packet>();
+        private TransferBuffer m_recv_buffer;
+        private byte m_security_flag = 0;
+        private SecurityFlags m_security_flags = new SecurityFlags();
+        private uint m_seed_count = 0;
+        private bool m_started_handshake = false;
+        private uint m_value_A = 0;
+        private uint m_value_B = 0;
+        private uint m_value_g = 0;
+        private uint m_value_K = 0;
+        private uint m_value_p = 0;
+        private uint m_value_x = 0;
+        private static Random random = new Random();
+
+        public Security_module()
+        {
+            this.m_enc_opcodes.Add(0x2001);
+            this.m_enc_opcodes.Add(0x6100);
+            this.m_enc_opcodes.Add(0x6101);
+            this.m_enc_opcodes.Add(0x6102);
+            this.m_enc_opcodes.Add(0x6103);
+            this.m_enc_opcodes.Add(0x6107);
+            this.m_blowfish = new Blowfish();
+            this.m_recv_buffer = new TransferBuffer(0x2000);
+            this.m_current_buffer = null;
+            this.m_massive_count = 0;
+            this.m_massive_packet = null;
+            this.m_class_lock = new object();
+        }
+
+        public void AddEncryptedOpcode(ushort opcode)
+        {
+            lock (this.m_class_lock)
+            {
+                if (!this.m_enc_opcodes.Contains(opcode))
+                {
+                    this.m_enc_opcodes.Add(opcode);
+                }
+            }
+        }
+
+        public void ChangeIdentity(string name, byte flag)
+        {
+            lock (this.m_class_lock)
+            {
+                this.m_identity_name = name;
+                this.m_identity_flag = flag;
+            }
+        }
+
+        private static SecurityFlags CopySecurityFlags(SecurityFlags flags)
+        {
+            return new SecurityFlags { none = flags.none, blowfish = flags.blowfish, security_bytes = flags.security_bytes, handshake = flags.handshake, handshake_response = flags.handshake_response, _6 = flags._6, _7 = flags._7, _8 = flags._8 };
+        }
+
+        private byte[] FormatPacket(ushort opcode, byte[] data, bool encrypted)
+        {
+            if (data.Length >= 0x8000)
+            {
+                throw new Exception("[SecurityAPI::FormatPacket] Payload is too large!");
+            }
+            ushort length = (ushort)data.Length;
+            PacketWriter writer = new PacketWriter();
+            writer.Write(length);
+            writer.Write(opcode);
+            writer.Write((ushort)0);
+            writer.Write(data);
+            writer.Flush();
+            if (encrypted && ((this.m_security_flags.blowfish == 1) || ((this.m_security_flags.security_bytes == 1) && (this.m_security_flags.blowfish == 0))))
+            {
+                long offset = writer.BaseStream.Seek(0L, SeekOrigin.Current);
+                ushort num3 = (ushort)(length | 0x8000);
+                writer.BaseStream.Seek(0L, SeekOrigin.Begin);
+                writer.Write(num3);
+                writer.Flush();
+                writer.BaseStream.Seek(offset, SeekOrigin.Begin);
+            }
+            if (!this.m_client_security && (this.m_security_flags.security_bytes == 1))
+            {
+                long num4 = writer.BaseStream.Seek(0L, SeekOrigin.Current);
+                byte num5 = this.GenerateCountByte(true);
+                writer.BaseStream.Seek(4L, SeekOrigin.Begin);
+                writer.Write(num5);
+                writer.Flush();
+                byte num6 = this.GenerateCheckByte(writer.GetBytes());
+                writer.BaseStream.Seek(5L, SeekOrigin.Begin);
+                writer.Write(num6);
+                writer.Flush();
+                writer.BaseStream.Seek(num4, SeekOrigin.Begin);
+            }
+            if (encrypted && (this.m_security_flags.blowfish == 1))
+            {
+                byte[] bytes = writer.GetBytes();
+                byte[] buffer = this.m_blowfish.Encode(bytes, 2, bytes.Length - 2);
+                writer.BaseStream.Seek(2L, SeekOrigin.Begin);
+                writer.Write(buffer);
+                writer.Flush();
+            }
+            else if ((encrypted && (this.m_security_flags.security_bytes == 1)) && (this.m_security_flags.blowfish == 0))
+            {
+                long num7 = writer.BaseStream.Seek(0L, SeekOrigin.Current);
+                writer.BaseStream.Seek(0L, SeekOrigin.Begin);
+                writer.Write(length);
+                writer.Flush();
+                writer.BaseStream.Seek(num7, SeekOrigin.Begin);
+            }
+            return writer.GetBytes();
+        }
+
+        private static byte FromSecurityFlags(SecurityFlags flags)
+        {
+            return (byte)(((((((flags.none | (flags.blowfish << 1)) | (flags.security_bytes << 2)) | (flags.handshake << 3)) | (flags.handshake_response << 4)) | (flags._6 << 5)) | (flags._7 << 6)) | (flags._8 << 7));
+        }
+
+        private uint G_pow_X_mod_P(uint P, uint X, uint G)
+        {
+            long num = 1L;
+            long num2 = G;
+            if (X != 0)
+            {
+                while (X != 0)
+                {
+                    if ((X & 1) > 0)
+                    {
+                        num = (long)((num2 * num) % (P));
+                    }
+                    X = X >> 1;
+                    num2 = (long)((num2 * num2) % (P));
+                }
+                return (uint)num;
+            }
+            return 1;
+        }
+
+        private byte GenerateCheckByte(byte[] stream)
+        {
+            return this.GenerateCheckByte(stream, 0, stream.Length);
+        }
+
+        private byte GenerateCheckByte(byte[] stream, int offset, int length)
+        {
+            uint maxValue = uint.MaxValue;
+            uint num2 = this.m_crc_seed << 8;
+            for (int i = offset; i < (offset + length); i++)
+            {
+                maxValue = (maxValue >> 8) ^ global_security_table[(int)((IntPtr)(num2 + ((stream[i] ^ maxValue) & 0xff)))];
+            }
+            return (byte)(((((maxValue >> 0x18) & 0xff) + ((maxValue >> 8) & 0xff)) + ((maxValue >> 0x10) & 0xff)) + (maxValue & 0xff));
+        }
+
+        private byte GenerateCountByte(bool update)
+        {
+            byte num = (byte)(this.m_count_byte_seeds[2] * (~this.m_count_byte_seeds[0] + this.m_count_byte_seeds[1]));
+            num = (byte)(num ^ (num >> 4));
+            if (update)
+            {
+                this.m_count_byte_seeds[0] = num;
+            }
+            return num;
+        }
+
+        private void GenerateSecurity(SecurityFlags flags)
+        {
+            this.m_security_flag = FromSecurityFlags(flags);
+            this.m_security_flags = flags;
+            this.m_client_security = true;
+            Packet item = new Packet(0x5000);
+            item.WriteUInt8(this.m_security_flag);
+            if (this.m_security_flags.blowfish == 1)
+            {
+                this.m_initial_blowfish_key = NextUInt64();
+                this.m_blowfish.Initialize(BitConverter.GetBytes(this.m_initial_blowfish_key));
+                item.WriteUInt64(this.m_initial_blowfish_key);
+            }
+            if (this.m_security_flags.security_bytes == 1)
+            {
+                this.m_seed_count = NextUInt8();
+                this.SetupCountByte(this.m_seed_count);
+                this.m_crc_seed = NextUInt8();
+                item.WriteUInt32(this.m_seed_count);
+                item.WriteUInt32(this.m_crc_seed);
+            }
+            if (this.m_security_flags.handshake == 1)
+            {
+                this.m_handshake_blowfish_key = NextUInt64();
+                this.m_value_x = NextUInt32() & 0x7fffffff;
+                this.m_value_g = NextUInt32() & 0x7fffffff;
+                this.m_value_p = NextUInt32() & 0x7fffffff;
+                this.m_value_A = this.G_pow_X_mod_P(this.m_value_p, this.m_value_x, this.m_value_g);
+                item.WriteUInt64(this.m_handshake_blowfish_key);
+                item.WriteUInt32(this.m_value_g);
+                item.WriteUInt32(this.m_value_p);
+                item.WriteUInt32(this.m_value_A);
+            }
+            this.m_outgoing_packets.Add(item);
+        }
+
+        public void GenerateSecurity(bool blowfish, bool security_bytes, bool handshake)
+        {
+            lock (this.m_class_lock)
+            {
+                SecurityFlags flags = new SecurityFlags();
+                if (blowfish)
+                {
+                    flags.none = 0;
+                    flags.blowfish = 1;
+                }
+                if (security_bytes)
+                {
+                    flags.none = 0;
+                    flags.security_bytes = 1;
+                }
+                if (handshake)
+                {
+                    flags.none = 0;
+                    flags.handshake = 1;
+                }
+                if ((!blowfish && !security_bytes) && !handshake)
+                {
+                    flags.none = 1;
+                }
+                this.GenerateSecurity(flags);
+            }
+        }
+
+        private static uint[] GenerateSecurityTable()
+        {
+            uint[] numArray = new uint[0x10000];
+            byte[] buffer = new byte[] {
+                0xb1, 0xd6, 0x8b, 150, 150, 0x30, 7, 0x77, 0x2c, 0x61, 14, 0xee, 0xba, 0x51, 9, 0x99,
+                0x19, 0xc4, 0x6d, 7, 0x8f, 0xf4, 0x6a, 0x70, 0x35, 0xa5, 0x63, 0xe9, 0xa3, 0x95, 100, 0x9e,
+                50, 0x88, 0xdb, 14, 0xa4, 0xb8, 220, 0x79, 30, 0xe9, 0xd5, 0xe0, 0x88, 0xd9, 210, 0x97,
+                0x2b, 0x4c, 0xb6, 9, 0xbd, 0x7c, 0xb1, 0x7e, 7, 0x2d, 0xb8, 0xe7, 0x91, 0x1d, 0xbf, 0x90,
+                100, 0x10, 0xb7, 0x1d, 0xf2, 0x20, 0xb0, 0x6a, 0x48, 0x71, 0xb1, 0xf3, 0xde, 0x41, 190, 140,
+                0x7d, 0xd4, 0xda, 0x1a, 0xeb, 0xe4, 0xdd, 0x6d, 0x51, 0xb5, 0xd4, 0xf4, 0xc7, 0x85, 0xd3, 0x83,
+                0x56, 0x98, 0x6c, 0x13, 0xc0, 0xa8, 0x6b, 100, 0x7a, 0xf9, 0x62, 0xfd, 0xec, 0xc9, 0x65, 0x8a,
+                0x4f, 0x5c, 1, 20, 0xd9, 0x6c, 6, 0x63, 0x63, 0x3d, 15, 250, 0xf5, 13, 8, 0x8d,
+                200, 0x20, 110, 0x3b, 0x5e, 0x10, 0x69, 0x4c, 0xe4, 0x41, 0x60, 0xd5, 0x72, 0x71, 0x67, 0xa2,
+                0xd1, 0xe4, 3, 60, 0x47, 0xd4, 4, 0x4b, 0xfd, 0x85, 13, 210, 0x6b, 0xb5, 10, 0xa5,
+                250, 0xa8, 0xb5, 0x35, 0x6c, 0x98, 0xb2, 0x42, 0xd6, 0xc9, 0xbb, 0xdb, 0x40, 0xf9, 0xbc, 0xac,
+                0xe3, 0x6c, 0xd8, 50, 0x75, 0x5c, 0xdf, 0x45, 0xcf, 13, 0xd6, 220, 0x59, 0x3d, 0xd1, 0xab,
+                0xac, 0x30, 0xd9, 0x26, 0x3a, 0, 0xde, 0x51, 0x80, 0x51, 0xd7, 200, 0x16, 0x61, 0xd0, 0xbf,
+                0xb5, 0xf4, 180, 0x21, 0x23, 0xc4, 0xb3, 0x56, 0x99, 0x95, 0xba, 0xcf, 15, 0xa5, 0xb7, 0xb8,
+                0x9e, 0xb8, 2, 40, 8, 0x88, 5, 0x5f, 0xb2, 0xd9, 0xec, 0xc6, 0x24, 0xe9, 11, 0xb1,
+                0x87, 0x7c, 0x6f, 0x2f, 0x11, 0x4c, 0x68, 0x58, 0xab, 0x1d, 0x61, 0xc1, 0x3d, 0x2d, 0x66, 0xb6,
+                0x90, 0x41, 220, 0x76, 6, 0x71, 0xdb, 1, 0xbc, 0x20, 210, 0x98, 0x2a, 0x10, 0xd5, 0xef,
+                0x89, 0x85, 0xb1, 0x71, 0x1f, 0xb5, 0xb6, 6, 0xa5, 0xe4, 0xbf, 0x9f, 0x33, 0xd4, 0xb8, 0xe8,
+                0xa2, 0xc9, 7, 120, 0x34, 0xf9, 160, 15, 0x8e, 0xa8, 9, 150, 0x18, 0x98, 14, 0xe1,
+                0xbb, 13, 0x6a, 0x7f, 0x2d, 0x3d, 0x6d, 8, 0x97, 0x6c, 100, 0x91, 1, 0x5c, 0x63, 230,
+                0xf4, 0x51, 0x6b, 0x6b, 0x62, 0x61, 0x6c, 0x1c, 0xd8, 0x30, 0x65, 0x85, 0x4e, 0, 0x62, 0xf2,
+                0xed, 0x95, 6, 0x6c, 0x7b, 0xa5, 1, 0x1b, 0xc1, 0xf4, 8, 130, 0x57, 0xc4, 15, 0xf5,
+                0xc6, 0xd9, 0xb0, 0x63, 80, 0xe9, 0xb7, 0x12, 0xea, 0xb8, 190, 0x8b, 0x7c, 0x88, 0xb9, 0xfc,
+                0xdf, 0x1d, 0xdd, 0x62, 0x49, 0x2d, 0xda, 0x15, 0xf3, 0x7c, 0xd3, 140, 0x65, 0x4c, 0xd4, 0xfb,
+                0x58, 0x61, 0xb2, 0x4d, 0xce, 0x51, 0xb5, 0x3a, 0x74, 0, 0xbc, 0xa3, 0xe2, 0x30, 0xbb, 0xd4,
+                0x41, 0xa5, 0xdf, 0x4a, 0xd7, 0x95, 0xd8, 0x3d, 0x6d, 0xc4, 0xd1, 0xa4, 0xfb, 0xf4, 0xd6, 0xd3,
+                0x6a, 0xe9, 0x69, 0x43, 0xfc, 0xd9, 110, 0x34, 70, 0x88, 0x67, 0xad, 0xd0, 0xb8, 0x60, 0xda,
+                0x73, 0x2d, 4, 0x44, 0xe5, 0x1d, 3, 0x33, 0x5f, 0x4c, 10, 170, 0xc9, 0x7c, 13, 0xdd,
+                60, 0x71, 5, 80, 170, 0x41, 2, 0x27, 0x10, 0x10, 11, 190, 0x86, 0x20, 12, 0xc9,
+                0x25, 0xb5, 0x68, 0x57, 0xb3, 0x85, 0x6f, 0x20, 9, 0xd4, 0x66, 0xb9, 0x9f, 0xe4, 0x61, 0xce,
+                14, 0xf9, 0xde, 0x5e, 8, 0xc9, 0xd9, 0x29, 0x22, 0x98, 0xd0, 0xb0, 180, 0xa8, 0x57, 0xc7,
+                0x17, 0x3d, 0xb3, 0x59, 0x81, 13, 180, 0x3e, 0x3b, 0x5c, 0xbd, 0xb7, 0xad, 0x6c, 0xba, 0xc0,
+                0x20, 0x83, 0xb8, 0xed, 0xb6, 0xb3, 0xbf, 0x9a, 12, 0xe2, 0xb6, 3, 0x9a, 210, 0xb1, 0x74,
+                0x39, 0x47, 0xd5, 0xea, 0xaf, 0x77, 210, 0x9d, 0x15, 0x26, 0xdb, 4, 0x83, 0x16, 220, 0x73,
+                0x12, 11, 0x63, 0xe3, 0x84, 0x3b, 100, 0x94, 0x3e, 0x6a, 0x6d, 13, 0xa8, 90, 0x6a, 0x7a,
+                11, 0xcf, 14, 0xe4, 0x9d, 0xff, 9, 0x93, 0x27, 0xae, 0, 10, 0xb1, 0x9e, 7, 0x7d,
+                0x44, 0x93, 15, 240, 210, 0xa2, 8, 0x87, 0x68, 0xf2, 1, 30, 0xfe, 0xc2, 6, 0x69,
+                0x5d, 0x57, 0x62, 0xf7, 0xcb, 0x67, 0x65, 0x80, 0x71, 0x36, 0x6c, 0x19, 0xe7, 6, 0x6b, 110,
+                0x76, 0x1b, 0xd4, 0xfe, 0xe0, 0x2b, 0xd3, 0x89, 90, 0x7a, 0xda, 0x10, 0xcc, 0x4a, 0xdd, 0x67,
+                0x6f, 0xdf, 0xb9, 0xf9, 0xf9, 0xef, 190, 0x8e, 0x43, 190, 0xb7, 0x17, 0xd5, 0x8e, 0xb0, 0x60,
+                0xe8, 0xa3, 0xd6, 0xd6, 0x7e, 0x93, 0xd1, 0xa1, 0xc4, 0xc2, 0xd8, 0x38, 0x52, 0xf2, 0xdf, 0x4f,
+                0xf1, 0x67, 0xbb, 0xd1, 0x67, 0x57, 0xbc, 0xa6, 0xdd, 6, 0xb5, 0x3f, 0x4b, 0x36, 0xb2, 0x48,
+                0xda, 0x2b, 13, 0xd8, 0x4c, 0x1b, 10, 0xaf, 0xf6, 0x4a, 3, 0x36, 0x60, 0x7a, 4, 0x41,
+                0xc3, 0xef, 0x60, 0xdf, 0x55, 0xdf, 0x67, 0xa8, 0xef, 0x8e, 110, 0x31, 0x79, 14, 0x69, 70,
+                140, 0xb3, 0x51, 0xcb, 0x1a, 0x83, 0x63, 0xbc, 160, 210, 0x6f, 0x25, 0x36, 0xe2, 0x68, 0x52,
+                0x95, 0x77, 12, 0xcc, 3, 0x47, 11, 0xbb, 0xb9, 20, 2, 0x22, 0x2f, 0x26, 5, 0x55,
+                190, 0x3b, 0xb6, 0xc5, 40, 11, 0xbd, 0xb2, 0x92, 90, 180, 0x2b, 4, 0x6a, 0xb3, 0x5c,
+                0xa7, 0xff, 0xd7, 0xc2, 0x31, 0xcf, 0xd0, 0xb5, 0x8b, 0x9e, 0xd9, 0x2c, 0x1d, 0xae, 0xde, 0x5b,
+                0xb0, 0x72, 100, 0x9b, 0x26, 0xf2, 0xe3, 0xec, 0x9c, 0xa3, 0x6a, 0x75, 10, 0x93, 0x6d, 2,
+                0xa9, 6, 9, 0x9c, 0x3f, 0x36, 14, 0xeb, 0x85, 0x68, 7, 0x72, 0x13, 7, 0, 5,
+                130, 0x48, 0xbf, 0x95, 20, 0x7a, 0xb8, 0xe2, 0xae, 0x2b, 0xb1, 0x7b, 0x38, 0x1b, 0xb6, 12,
+                0x9b, 0x8e, 210, 0x92, 13, 190, 0xd5, 0xe5, 0xb7, 0xef, 220, 0x7c, 0x21, 0xdf, 0xdb, 11,
+                0x94, 210, 0xd3, 0x86, 0x42, 0xe2, 0xd4, 0xf1, 0xf8, 0xb3, 0xdd, 0x68, 110, 0x83, 0xda, 0x1f,
+                0xcd, 0x16, 190, 0x81, 0x5b, 0x26, 0xb9, 0xf6, 0xe1, 0x77, 0xb0, 0x6f, 0x77, 0x47, 0xb7, 0x18,
+                0xe0, 90, 8, 0x88, 0x70, 0x6a, 15, 0xf1, 0xca, 0x3b, 6, 0x66, 0x5c, 11, 1, 0x11,
+                0xff, 0x9e, 0x65, 0x8f, 0x69, 0xae, 0x62, 0xf8, 0xd3, 0xff, 0x6b, 0x61, 0x45, 0xcf, 0x6c, 0x16,
+                120, 0xe2, 10, 160, 0xee, 210, 13, 0xd7, 0x54, 0x83, 4, 0x4e, 0xc2, 0xb3, 3, 0x39,
+                0x61, 0x26, 0x67, 0xa7, 0xf7, 0x16, 0x60, 0xd0, 0x4d, 0x47, 0x69, 0x49, 0xdb, 0x77, 110, 0x3e,
+                0x4a, 0x6a, 0xd1, 0xae, 220, 90, 0xd6, 0xd9, 0x66, 11, 0xdf, 0x40, 240, 0x3b, 0xd8, 0x37,
+                0x53, 0xae, 0xbc, 0xa9, 0xc5, 0x9e, 0xbb, 0xde, 0x7f, 0xcf, 0xb2, 0x47, 0xe9, 0xff, 0xb5, 0x30,
+                0x1c, 0xf9, 0xbd, 0xbd, 0x8a, 0xcd, 0xba, 0xca, 0x30, 0x9e, 0xb3, 0x53, 0xa6, 0xa3, 0xbc, 0x24,
+                5, 0x3b, 0xd0, 0xba, 0xa3, 6, 0xd7, 0xcd, 0xe9, 0x57, 0xde, 0x54, 0xbf, 0x67, 0xd9, 0x23,
+                0x2e, 0x72, 0x66, 0xb3, 0xb8, 0x4a, 0x61, 0xc4, 2, 0x1b, 0x38, 0x5d, 0x94, 0x2b, 0x6f, 0x2b,
+                0x37, 190, 0xcb, 180, 0xa1, 0x8e, 0xcc, 0xc3, 0x1b, 0xdf, 13, 90, 0x8d, 0xed, 2, 0x2d
+             };
+            using (MemoryStream stream = new MemoryStream(buffer, false))
+            {
+                using (BinaryReader reader = new BinaryReader(stream))
+                {
+                    int num = 0;
+                    for (int i = 0; i < 0x400; i += 4)
+                    {
+                        uint num3 = reader.ReadUInt32();
+                        for (uint j = 0; j < 0x100; j++)
+                        {
+                            uint num5 = j >> 1;
+                            if ((j & 1) != 0)
+                            {
+                                num5 ^= num3;
+                            }
+                            for (int k = 0; k < 7; k++)
+                            {
+                                if ((num5 & 1) != 0)
+                                {
+                                    num5 = num5 >> 1;
+                                    num5 ^= num3;
+                                }
+                                else
+                                {
+                                    num5 = num5 >> 1;
+                                }
+                            }
+                            numArray[num++] = num5;
+                        }
+                    }
+                }
+            }
+            return numArray;
+        }
+
+        private uint GenerateValue(ref uint val)
+        {
+            for (int i = 0; i < 0x20; i++)
+            {
+                val = (((((((((((val >> 2) ^ val) >> 2) ^ val) >> 1) ^ val) >> 1) ^ val) >> 1) ^ val) & 1) | ((((val & 1) << 0x1f) | (val >> 1)) & 0xfffffffe);
+            }
+            return val;
+        }
+
+        private KeyValuePair<TransferBuffer, Packet> GetPacketToSend()
+        {
+            if (this.m_outgoing_packets.Count == 0)
+            {
+                throw new Exception("[SecurityAPI::GetPacketToSend] No packets are avaliable to send.");
+            }
+            Packet packet = this.m_outgoing_packets[0];
+            this.m_outgoing_packets.RemoveAt(0);
+            if (packet.Massive)
+            {
+                ushort num = 0;
+                PacketWriter writer = new PacketWriter();
+                PacketWriter writer2 = new PacketWriter();
+                byte[] bytes = packet.GetBytes();
+                new PacketReader(bytes);
+                TransferBuffer buffer2 = new TransferBuffer(0xff9, 0, bytes.Length);
+                while (buffer2.Size > 0)
+                {
+                    PacketWriter writer3 = new PacketWriter();
+                    int count = (buffer2.Size > 0xff9) ? 0xff9 : buffer2.Size;
+                    writer3.Write((byte)0);
+                    writer3.Write(bytes, buffer2.Offset, count);
+                    buffer2.Offset += count;
+                    buffer2.Size -= count;
+                    writer2.Write(this.FormatPacket(0x600d, writer3.GetBytes(), false));
+                    num = (ushort)(num + 1);
+                }
+                PacketWriter writer4 = new PacketWriter();
+                writer4.Write((byte)1);
+                writer4.Write((short)num);
+                writer4.Write(packet.Opcode);
+                writer.Write(this.FormatPacket(0x600d, writer4.GetBytes(), false));
+                writer.Write(writer2.GetBytes());
+                byte[] buffer = writer.GetBytes();
+                packet.Lock();
+                return new KeyValuePair<TransferBuffer, Packet>(new TransferBuffer(buffer, 0, buffer.Length, true), packet);
+            }
+            bool encrypted = packet.Encrypted;
+            if (!this.m_client_security && this.m_enc_opcodes.Contains(packet.Opcode))
+            {
+                encrypted = true;
+            }
+            byte[] buffer4 = this.FormatPacket(packet.Opcode, packet.GetBytes(), encrypted);
+            packet.Lock();
+            return new KeyValuePair<TransferBuffer, Packet>(new TransferBuffer(buffer4, 0, buffer4.Length, true), packet);
+        }
+
+        private void Handshake(ushort packet_opcode, PacketReader packet_data, bool packet_encrypted)
+        {
+            if (packet_encrypted)
+            {
+                throw new Exception("[SecurityAPI::Handshake] Received an illogical (encrypted) handshake packet.");
+            }
+            if (this.m_client_security)
+            {
+                if (this.m_security_flags.handshake == 0)
+                {
+                    if (packet_opcode == 0x9000)
+                    {
+                        if (this.m_accepted_handshake)
+                        {
+                            throw new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (duplicate 0x9000).");
+                        }
+                        this.m_accepted_handshake = true;
+                        return;
+                    }
+                    if (packet_opcode == 0x5000)
+                    {
+                        throw new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (0x5000 with no handshake).");
+                    }
+                    throw new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (programmer error). [1681]");
+                }
+                if (packet_opcode == 0x9000)
+                {
+                    if (!this.m_started_handshake)
+                    {
+                        throw new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (out of order 0x9000).");
+                    }
+                    if (this.m_accepted_handshake)
+                    {
+                        throw new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (duplicate 0x9000).");
+                    }
+                    this.m_accepted_handshake = true;
+                }
+                else
+                {
+                    if (packet_opcode != 0x5000)
+                    {
+                        throw new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (programmer error). [1699]");
+                    }
+                    if (this.m_started_handshake)
+                    {
+                        throw new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (duplicate 0x5000).");
+                    }
+                    this.m_started_handshake = true;
+                    ulong val = 0L;
+                    this.m_value_B = packet_data.ReadUInt32();
+                    this.m_client_key = packet_data.ReadUInt64();
+                    this.m_value_K = this.G_pow_X_mod_P(this.m_value_p, this.m_value_x, this.m_value_B);
+                    val = MAKELONGLONG_(this.m_value_A, this.m_value_B);
+                    this.KeyTransformValue(ref val, this.m_value_K, (byte)(LOBYTE_(LOWORD_(this.m_value_K)) & 3));
+                    this.m_blowfish.Initialize(BitConverter.GetBytes(val));
+                    byte[] buffer = this.m_blowfish.Decode(BitConverter.GetBytes(this.m_client_key));
+                    this.m_client_key = BitConverter.ToUInt64(buffer, 0);
+                    val = MAKELONGLONG_(this.m_value_B, this.m_value_A);
+                    this.KeyTransformValue(ref val, this.m_value_K, (byte)(LOBYTE_(LOWORD_(this.m_value_B)) & 7));
+                    if (this.m_client_key != val)
+                    {
+                        throw new Exception("[SecurityAPI::Handshake] Client signature error.");
+                    }
+                    val = MAKELONGLONG_(this.m_value_A, this.m_value_B);
+                    this.KeyTransformValue(ref val, this.m_value_K, (byte)(LOBYTE_(LOWORD_(this.m_value_K)) & 3));
+                    this.m_blowfish.Initialize(BitConverter.GetBytes(val));
+                    this.m_challenge_key = MAKELONGLONG_(this.m_value_A, this.m_value_B);
+                    this.KeyTransformValue(ref this.m_challenge_key, this.m_value_K, (byte)(LOBYTE_(LOWORD_(this.m_value_A)) & 7));
+                    buffer = this.m_blowfish.Encode(BitConverter.GetBytes(this.m_challenge_key));
+                    this.m_challenge_key = BitConverter.ToUInt64(buffer, 0);
+                    this.KeyTransformValue(ref this.m_handshake_blowfish_key, this.m_value_K, 3);
+                    this.m_blowfish.Initialize(BitConverter.GetBytes(this.m_handshake_blowfish_key));
+                    SecurityFlags flags = new SecurityFlags
+                    {
+                        handshake_response = 1
+                    };
+                    byte num2 = FromSecurityFlags(flags);
+                    Packet item = new Packet(0x5000);
+                    item.WriteUInt8(num2);
+                    item.WriteUInt64(this.m_challenge_key);
+                    this.m_outgoing_packets.Add(item);
+                }
+            }
+            else
+            {
+                if (packet_opcode != 0x5000)
+                {
+                    throw new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (programmer error). [1745]");
+                }
+                byte num3 = packet_data.ReadByte();
+                SecurityFlags flags2 = ToSecurityFlags(num3);
+                if (this.m_security_flag == 0)
+                {
+                    this.m_security_flag = num3;
+                    this.m_security_flags = flags2;
+                }
+                if (flags2.blowfish == 1)
+                {
+                    this.m_initial_blowfish_key = packet_data.ReadUInt64();
+                    this.m_blowfish.Initialize(BitConverter.GetBytes(this.m_initial_blowfish_key));
+                }
+                if (flags2.security_bytes == 1)
+                {
+                    this.m_seed_count = packet_data.ReadUInt32();
+                    this.m_crc_seed = packet_data.ReadUInt32();
+                    this.SetupCountByte(this.m_seed_count);
+                }
+                if (flags2.handshake == 1)
+                {
+                    this.m_handshake_blowfish_key = packet_data.ReadUInt64();
+                    this.m_value_g = packet_data.ReadUInt32();
+                    this.m_value_p = packet_data.ReadUInt32();
+                    this.m_value_A = packet_data.ReadUInt32();
+                    this.m_value_x = NextUInt32() & 0x7fffffff;
+                    this.m_value_B = this.G_pow_X_mod_P(this.m_value_p, this.m_value_x, this.m_value_g);
+                    this.m_value_K = this.G_pow_X_mod_P(this.m_value_p, this.m_value_x, this.m_value_A);
+                    ulong num4 = MAKELONGLONG_(this.m_value_A, this.m_value_B);
+                    this.KeyTransformValue(ref num4, this.m_value_K, (byte)(LOBYTE_(LOWORD_(this.m_value_K)) & 3));
+                    this.m_blowfish.Initialize(BitConverter.GetBytes(num4));
+                    this.m_client_key = MAKELONGLONG_(this.m_value_B, this.m_value_A);
+                    this.KeyTransformValue(ref this.m_client_key, this.m_value_K, (byte)(LOBYTE_(LOWORD_(this.m_value_B)) & 7));
+                    byte[] buffer2 = this.m_blowfish.Encode(BitConverter.GetBytes(this.m_client_key));
+                    this.m_client_key = BitConverter.ToUInt64(buffer2, 0);
+                }
+                if (flags2.handshake_response == 1)
+                {
+                    this.m_challenge_key = packet_data.ReadUInt64();
+                    ulong num5 = MAKELONGLONG_(this.m_value_A, this.m_value_B);
+                    this.KeyTransformValue(ref num5, this.m_value_K, (byte)(LOBYTE_(LOWORD_(this.m_value_A)) & 7));
+                    num5 = BitConverter.ToUInt64(this.m_blowfish.Encode(BitConverter.GetBytes(num5)), 0);
+                    if (this.m_challenge_key != num5)
+                    {
+                        throw new Exception("[SecurityAPI::Handshake] Server signature error.");
+                    }
+                    this.KeyTransformValue(ref this.m_handshake_blowfish_key, this.m_value_K, 3);
+                    this.m_blowfish.Initialize(BitConverter.GetBytes(this.m_handshake_blowfish_key));
+                }
+                if ((flags2.handshake == 1) && (flags2.handshake_response == 0))
+                {
+                    if (this.m_started_handshake || this.m_accepted_handshake)
+                    {
+                        throw new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (duplicate 0x5000).");
+                    }
+                    Packet packet2 = new Packet(0x5000);
+                    packet2.WriteUInt32(this.m_value_B);
+                    packet2.WriteUInt64(this.m_client_key);
+                    this.m_outgoing_packets.Insert(0, packet2);
+                    this.m_started_handshake = true;
+                }
+                else
+                {
+                    if (this.m_accepted_handshake)
+                    {
+                        throw new Exception("[SecurityAPI::Handshake] Received an illogical handshake packet (duplicate 0x5000).");
+                    }
+                    Packet packet3 = new Packet(0x9000);
+                    Packet packet4 = new Packet(0x2001, true, false);
+                    packet4.WriteAscii(this.m_identity_name);
+                    packet4.WriteUInt8(this.m_identity_flag);
+                    this.m_outgoing_packets.Insert(0, packet4);
+                    this.m_outgoing_packets.Insert(0, packet3);
+                    this.m_started_handshake = true;
+                    this.m_accepted_handshake = true;
+                }
+            }
+        }
+
+        private bool HasPacketToSend()
+        {
+            if (this.m_outgoing_packets.Count == 0)
+            {
+                return false;
+            }
+            if (!this.m_accepted_handshake)
+            {
+                Packet packet = this.m_outgoing_packets[0];
+                if ((packet.Opcode != 0x5000) && (packet.Opcode != 0x9000))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static byte HIBYTE_(ushort a)
+        {
+            return (byte)((a >> 8) & 0xff);
+        }
+
+        private static ushort HIWORD_(uint a)
+        {
+            return (ushort)((a >> 0x10) & 0xffff);
+        }
+
+        private void KeyTransformValue(ref ulong val, uint key, byte key_byte)
+        {
+            byte[] bytes = BitConverter.GetBytes(val);
+            bytes[0] = (byte)(bytes[0] ^ ((byte)((bytes[0] + LOBYTE_(LOWORD_(key))) + key_byte)));
+            bytes[1] = (byte)(bytes[1] ^ ((byte)((bytes[1] + HIBYTE_(LOWORD_(key))) + key_byte)));
+            bytes[2] = (byte)(bytes[2] ^ ((byte)((bytes[2] + LOBYTE_(HIWORD_(key))) + key_byte)));
+            bytes[3] = (byte)(bytes[3] ^ ((byte)((bytes[3] + HIBYTE_(HIWORD_(key))) + key_byte)));
+            bytes[4] = (byte)(bytes[4] ^ ((byte)((bytes[4] + LOBYTE_(LOWORD_(key))) + key_byte)));
+            bytes[5] = (byte)(bytes[5] ^ ((byte)((bytes[5] + HIBYTE_(LOWORD_(key))) + key_byte)));
+            bytes[6] = (byte)(bytes[6] ^ ((byte)((bytes[6] + LOBYTE_(HIWORD_(key))) + key_byte)));
+            bytes[7] = (byte)(bytes[7] ^ ((byte)((bytes[7] + HIBYTE_(HIWORD_(key))) + key_byte)));
+            val = BitConverter.ToUInt64(bytes, 0);
+        }
+
+        private static byte LOBYTE_(ushort a)
+        {
+            return (byte)(a & 0xff);
+        }
+
+        private static ushort LOWORD_(uint a)
+        {
+            return (ushort)(a & 0xffff);
+        }
+
+        private static uint MAKELONG_(ushort a, ushort b)
+        {
+            uint num = a;
+            uint num2 = b;
+            return ((num2 << 0x10) | num);
+        }
+
+        private static ulong MAKELONGLONG_(uint a, uint b)
+        {
+            ulong num = a;
+            ulong num2 = b;
+            return ((num2 << 0x20) | num);
+        }
+
+        private static ushort MAKEWORD_(byte a, byte b)
+        {
+            ushort num = a;
+            ushort num2 = b;
+            return (ushort)((num2 << 8) | num);
+        }
+
+        private static ushort NextUInt16()
+        {
+            byte[] buffer = new byte[2];
+            random.NextBytes(buffer);
+            return BitConverter.ToUInt16(buffer, 0);
+        }
+
+        private static uint NextUInt32()
+        {
+            byte[] buffer = new byte[4];
+            random.NextBytes(buffer);
+            return BitConverter.ToUInt32(buffer, 0);
+        }
+
+        private static ulong NextUInt64()
+        {
+            byte[] buffer = new byte[8];
+            random.NextBytes(buffer);
+            return BitConverter.ToUInt64(buffer, 0);
+        }
+
+        private static byte NextUInt8()
+        {
+            return (byte)(NextUInt16() & 0xff);
+        }
+
+        public void Recv(TransferBuffer raw_buffer)
+        {
+            List<TransferBuffer> list = new List<TransferBuffer>();
+            lock (this.m_class_lock)
+            {
+                int num = raw_buffer.Size - raw_buffer.Offset;
+                int num2 = 0;
+                while (num > 0)
+                {
+                    int count = num;
+                    int num4 = this.m_recv_buffer.Buffer.Length - this.m_recv_buffer.Size;
+                    if (count > num4)
+                    {
+                        count = num4;
+                    }
+                    num -= count;
+                    Buffer.BlockCopy(raw_buffer.Buffer, raw_buffer.Offset + num2, this.m_recv_buffer.Buffer, this.m_recv_buffer.Size, count);
+                    this.m_recv_buffer.Size += count;
+                    num2 += count;
+                    while (this.m_recv_buffer.Size > 0)
+                    {
+                        if (this.m_current_buffer == null)
+                        {
+                            if (this.m_recv_buffer.Size < 2)
+                            {
+                                continue;
+                            }
+                            int length = (this.m_recv_buffer.Buffer[1] << 8) | this.m_recv_buffer.Buffer[0];
+                            if ((length & 0x8000) > 0)
+                            {
+                                length &= 0x7fff;
+                                if (this.m_security_flags.blowfish == 1)
+                                {
+                                    length = 2 + this.m_blowfish.GetOutputLength(length + 4);
+                                }
+                                else
+                                {
+                                    length += 6;
+                                }
+                            }
+                            else
+                            {
+                                length += 6;
+                            }
+                            this.m_current_buffer = new TransferBuffer(length, 0, length);
+                        }
+                        int size = this.m_current_buffer.Size - this.m_current_buffer.Offset;
+                        if (size > this.m_recv_buffer.Size)
+                        {
+                            size = this.m_recv_buffer.Size;
+                        }
+                        Buffer.BlockCopy(this.m_recv_buffer.Buffer, 0, this.m_current_buffer.Buffer, this.m_current_buffer.Offset, size);
+                        this.m_current_buffer.Offset += size;
+                        this.m_recv_buffer.Size -= size;
+                        if (this.m_recv_buffer.Size > 0)
+                        {
+                            Buffer.BlockCopy(this.m_recv_buffer.Buffer, size, this.m_recv_buffer.Buffer, 0, this.m_recv_buffer.Size);
+                        }
+                        if (this.m_current_buffer.Size == this.m_current_buffer.Offset)
+                        {
+                            this.m_current_buffer.Offset = 0;
+                            list.Add(this.m_current_buffer);
+                            this.m_current_buffer = null;
+                        }
+                    }
+                }
+                if (list.Count > 0)
+                {
+                    foreach (TransferBuffer buffer in list)
+                    {
+                        bool flag = false;
+                        int num7 = (buffer.Buffer[1] << 8) | buffer.Buffer[0];
+                        if ((num7 & 0x8000) > 0)
+                        {
+                            if (this.m_security_flags.blowfish == 1)
+                            {
+                                num7 &= 0x7fff;
+                                flag = true;
+                            }
+                            else
+                            {
+                                num7 &= 0x7fff;
+                            }
+                        }
+                        if (flag)
+                        {
+                            byte[] src = this.m_blowfish.Decode(buffer.Buffer, 2, buffer.Size - 2);
+                            byte[] dst = new byte[6 + num7];
+                            Buffer.BlockCopy(BitConverter.GetBytes((ushort)num7), 0, dst, 0, 2);
+                            Buffer.BlockCopy(src, 0, dst, 2, 4 + num7);
+                            buffer.Buffer = null;
+                            buffer.Buffer = dst;
+                        }
+                        PacketReader reader = new PacketReader(buffer.Buffer);
+                        num7 = reader.ReadUInt16();
+                        ushort item = reader.ReadUInt16();
+                        byte num9 = reader.ReadByte();
+                        byte num10 = reader.ReadByte();
+                        if (this.m_client_security && (this.m_security_flags.security_bytes == 1))
+                        {
+                            byte num11 = this.GenerateCountByte(true);
+                            if (num9 != num11)
+                            {
+                                throw new Exception("[SecurityAPI::Recv] Count byte mismatch.");
+                            }
+                            if ((flag || ((this.m_security_flags.security_bytes == 1) && (this.m_security_flags.blowfish == 0))) && (flag || this.m_enc_opcodes.Contains(item)))
+                            {
+                                num7 |= 0x8000;
+                                Buffer.BlockCopy(BitConverter.GetBytes((ushort)num7), 0, buffer.Buffer, 0, 2);
+                            }
+                            buffer.Buffer[5] = 0;
+                            byte num12 = this.GenerateCheckByte(buffer.Buffer);
+                            if (num10 != num12)
+                            {
+                                throw new Exception("[SecurityAPI::Recv] CRC byte mismatch.");
+                            }
+                            buffer.Buffer[4] = 0;
+                            if ((flag || ((this.m_security_flags.security_bytes == 1) && (this.m_security_flags.blowfish == 0))) && (flag || this.m_enc_opcodes.Contains(item)))
+                            {
+                                num7 &= 0x7fff;
+                                Buffer.BlockCopy(BitConverter.GetBytes((ushort)num7), 0, buffer.Buffer, 0, 2);
+                            }
+                        }
+                        if ((item == 0x5000) || (item == 0x9000))
+                        {
+                            this.Handshake(item, reader, flag);
+                            Packet packet = new Packet(item, flag, false, buffer.Buffer, 6, num7);
+                            packet.Lock();
+                            this.m_incoming_packets.Add(packet);
+                        }
+                        else
+                        {
+                            if (this.m_client_security && !this.m_accepted_handshake)
+                            {
+                                throw new Exception("[SecurityAPI::Recv] The client has not accepted the handshake.");
+                            }
+                            if (item == 0x600d)
+                            {
+                                if (reader.ReadByte() == 1)
+                                {
+                                    this.m_massive_count = reader.ReadUInt16();
+                                    ushort opcode = reader.ReadUInt16();
+                                    this.m_massive_packet = new Packet(opcode, flag, true);
+                                }
+                                else
+                                {
+                                    if (this.m_massive_packet == null)
+                                    {
+                                        throw new Exception("[SecurityAPI::Recv] A malformed 0x600D packet was received.");
+                                    }
+                                    this.m_massive_packet.WriteUInt8Array(reader.ReadBytes(num7 - 1));
+                                    this.m_massive_count = (ushort)(this.m_massive_count - 1);
+                                    if (this.m_massive_count == 0)
+                                    {
+                                        this.m_massive_packet.Lock();
+                                        this.m_incoming_packets.Add(this.m_massive_packet);
+                                        this.m_massive_packet = null;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                Packet packet2 = new Packet(item, flag, false, buffer.Buffer, 6, num7);
+                                packet2.Lock();
+                                this.m_incoming_packets.Add(packet2);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        public void Recv(byte[] buffer, int offset, int length)
+        {
+            this.Recv(new TransferBuffer(buffer, offset, length, true));
+        }
+
+        public void Send(Packet packet)
+        {
+            if ((packet.Opcode == 0x5000) || (packet.Opcode == 0x9000))
+            {
+                throw new Exception("[SecurityAPI::Send] Handshake packets cannot be sent through this function.");
+            }
+            lock (this.m_class_lock)
+            {
+                this.m_outgoing_packets.Add(packet);
+            }
+        }
+
+        private void SetupCountByte(uint seed)
+        {
+            if (seed == 0)
+            {
+                seed = 0x9abfb3b6;
+            }
+            uint val = seed;
+            uint num2 = this.GenerateValue(ref val);
+            uint num3 = this.GenerateValue(ref val);
+            uint num4 = this.GenerateValue(ref val);
+            this.GenerateValue(ref val);
+            byte num5 = (byte)((val & 0xff) ^ (num4 & 0xff));
+            byte num6 = (byte)((num2 & 0xff) ^ (num3 & 0xff));
+            if (num5 == 0)
+            {
+                num5 = 1;
+            }
+            if (num6 == 0)
+            {
+                num6 = 1;
+            }
+            this.m_count_byte_seeds[0] = (byte)(num5 ^ num6);
+            this.m_count_byte_seeds[1] = num6;
+            this.m_count_byte_seeds[2] = num5;
+        }
+
+        private static SecurityFlags ToSecurityFlags(byte value)
+        {
+            SecurityFlags flags = new SecurityFlags
+            {
+                none = (byte)(value & 1)
+            };
+            value = (byte)(value >> 1);
+            flags.blowfish = (byte)(value & 1);
+            value = (byte)(value >> 1);
+            flags.security_bytes = (byte)(value & 1);
+            value = (byte)(value >> 1);
+            flags.handshake = (byte)(value & 1);
+            value = (byte)(value >> 1);
+            flags.handshake_response = (byte)(value & 1);
+            value = (byte)(value >> 1);
+            flags._6 = (byte)(value & 1);
+            value = (byte)(value >> 1);
+            flags._7 = (byte)(value & 1);
+            value = (byte)(value >> 1);
+            flags._8 = (byte)(value & 1);
+            value = (byte)(value >> 1);
+            return flags;
+        }
+
+        public List<Packet> TransferIncoming()
+        {
+            List<Packet> list = null;
+            lock (this.m_class_lock)
+            {
+                if (this.m_incoming_packets.Count > 0)
+                {
+                    list = this.m_incoming_packets;
+                    this.m_incoming_packets = new List<Packet>();
+                }
+            }
+            return list;
+        }
+
+        public List<KeyValuePair<TransferBuffer, Packet>> TransferOutgoing()
+        {
+            List<KeyValuePair<TransferBuffer, Packet>> list = null;
+            lock (this.m_class_lock)
+            {
+                if (!this.HasPacketToSend())
+                {
+                    return list;
+                }
+                list = new List<KeyValuePair<TransferBuffer, Packet>>();
+                while (this.HasPacketToSend())
+                {
+                    list.Add(this.GetPacketToSend());
+                }
+            }
+            return list;
+        }
+
+        [StructLayout(LayoutKind.Explicit, Size = 8)]
+        private class SecurityFlags
+        {
+            [FieldOffset(5)]
+            public byte _6;
+            [FieldOffset(6)]
+            public byte _7;
+            [FieldOffset(7)]
+            public byte _8;
+            [FieldOffset(1)]
+            public byte blowfish;
+            [FieldOffset(3)]
+            public byte handshake;
+            [FieldOffset(4)]
+            public byte handshake_response;
+            [FieldOffset(0)]
+            public byte none;
+            [FieldOffset(2)]
+            public byte security_bytes;
+        }
+    }*/
 }
