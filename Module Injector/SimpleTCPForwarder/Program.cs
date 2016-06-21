@@ -141,14 +141,6 @@ namespace SimpleTCPForwarder
 
                             foreach (Context context in contexts) // Logic event processing
                             {
-                                if (context == local_context)
-                                {
-                                    context.Security.ChangeIdentity("SR_Gameserver", 0);
-                                }
-                                else
-                                {
-                                    context.Security.ChangeIdentity("AgentServer", 0);
-                                }
                                 List<Packet> packets = context.Security.TransferIncoming();
                                 if (packets != null)
                                 {
@@ -161,47 +153,48 @@ namespace SimpleTCPForwarder
                                         {
                                             string ModuleName = packet.ReadAscii();
                                             if (context == remote_context) // ignore local to proxy only
-                                            {                                             
-                                                    Console.WriteLine("Remote Context: Module: " + ModuleName);
-                                                    context.RelaySecurity.Send(packet); // proxy to remote is handled by API                                           
+                                            {
+                                                Console.WriteLine("Remote Context: Module: " + ModuleName);
+                                                context.RelaySecurity.Send(packet); // proxy to remote is handled by API                                           
                                             }
                                             else if (context == local_context) // ignore local to proxy only
-                                            {                                          
-                                                    Console.WriteLine("Local Context: Module: " + ModuleName);
-                                                    context.RelaySecurity.Send(packet); // proxy to remote is handled by API                                            
+                                            {
+                                                Console.WriteLine("Local Context: Module: " + ModuleName);
+                                                context.RelaySecurity.Send(packet); // proxy to remote is handled by API                                            
                                             }
                                         }
-                                        /*else if (packet.Opcode == 0xA102)
+                                        else if (packet.Opcode == 0x7025)
                                         {
-                                            byte result = packet.ReadUInt8();
-                                            if (result == 1)
+                                            int chat_type = packet.ReadUInt8();
+                                            if (chat_type == 3)
                                             {
-                                                uint id = packet.ReadUInt32();
-                                                string ip = packet.ReadAscii();
-                                                ushort port = packet.ReadUInt16();
-
-                                                using (Process process = new Process())
+                                                uint id = packet.ReadUInt8();
+                                                string message = packet.ReadAscii();
+                                                if (message.ToLower().Contains("envia") || message.ToLower().Contains("send"))
                                                 {
-                                                    process.StartInfo.UseShellExecute = false;
-                                                    process.StartInfo.FileName = System.Reflection.Assembly.GetExecutingAssembly().Location;
-                                                    process.StartInfo.Arguments = local_host + " " + (local_port + 1).ToString() + " " + ip + " " + port.ToString();
-                                                    if (!process.Start())
-                                                    {
-                                                        throw new Exception("Could not start the AgentServer Proxy process.");
-                                                    }
+                                                    int JID = Convert.ToInt32(message.Replace("envia ", "").Replace("send ", ""));
+                                                    /* 01 A9 61 2A 02 FA FF 05 07 03 00 00 00 */
+                                                    Console.Title = "Envia recibido!";
+                                                    Packet move = new Packet(0x7021);
+                                                    move.WriteUInt8(0x01);
+                                                    move.WriteUInt8(0xA9);
+                                                    move.WriteUInt8(0x61);
+                                                    move.WriteUInt8(0x2A);
+                                                    move.WriteUInt8(0x02);
+                                                    move.WriteUInt8(0xFA);
+                                                    move.WriteUInt8(0xFF);
+                                                    move.WriteUInt8(0x05);
+                                                    move.WriteUInt8(0x07);
+                                                    move.WriteUInt8(JID);
+                                                    move.WriteUInt8(0x00);
+                                                    move.WriteUInt8(0x00);
+                                                    move.WriteUInt8(0x00);
+                                                    context.RelaySecurity.Send(move);
                                                 }
-
-                                                Thread.Sleep(250); // Should be enough time, if not, increase, but too long and C9 timeout results
-
-                                                Packet new_packet = new Packet(0xA102, true);
-                                                new_packet.WriteUInt8(result);
-                                                new_packet.WriteUInt32(id);
-                                                new_packet.WriteAscii(local_host);
-                                                new_packet.WriteUInt16(local_port + 1);
-
-                                                context.RelaySecurity.Send(new_packet);
                                             }
-                                        }*/
+                                            context.RelaySecurity.Send(packet);
+                                        }
+                                       
                                         else
                                         {
                                             context.RelaySecurity.Send(packet);
